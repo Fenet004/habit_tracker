@@ -1,10 +1,53 @@
 import 'package:flutter/material.dart';
+import '../models/habit.dart';
+import '../widgets/habit_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  static const List<Habit> habits = [
+    Habit(
+      name: 'Drink Water',
+      frequency: HabitFrequency.daily,
+      streak: 12,
+      isCompleted: true,
+    ),
+
+    Habit(
+      name: 'Workout',
+      frequency: HabitFrequency.weekdays,
+      streak: 4,
+      isCompleted: false,
+    ),
+
+    Habit(
+      name: 'Read 30 Minutes',
+      frequency: HabitFrequency.daily,
+      streak: 7,
+      isCompleted: true,
+    ),
+
+    Habit(
+      name: 'Practice Coding',
+      frequency: HabitFrequency.daily,
+      streak: 5,
+      isCompleted: false,
+    ),
+
+    Habit(
+      name: 'Meditate',
+      frequency: HabitFrequency.daily,
+      streak: 3,
+      isCompleted: false,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final completedHabits = habits.where((habit) => habit.isCompleted).length;
+    final totalHabits = habits.length;
+    final progress = totalHabits == 0 ? 0.0 : completedHabits / totalHabits;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Habit Tracker'),
@@ -46,14 +89,14 @@ class HomeScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  '3 of 5 completed',
+                Text(
+                  '$completedHabits of $totalHabits completed',
                   style: TextStyle(
                     fontSize: 15,
                   ),
                 ),
                 Text(
-                  '60%',
+                  '${(progress * 100).round()}%',
                   style: TextStyle(
                     fontSize: 15,
                     color: Colors.grey.shade600,
@@ -64,8 +107,8 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            const LinearProgressIndicator(
-              value: 0.6,
+            LinearProgressIndicator(
+              value: progress,
               minHeight: 10,
             ),
 
@@ -81,48 +124,14 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            const HabitCard(
-              name: 'Drink Water',
-              frequency: 'Everyday',
-              streak: 12,
-              isCompleted: true,
-            ),
-
-            const SizedBox(height:8),
-
-            const HabitCard(
-              name: 'Workout',
-              frequency: 'Mon • Wed • Fri',
-              streak: 4,
-              isCompleted: false,
-            ),
-
-            const SizedBox(height: 8),
-
-            const HabitCard(
-              name: 'Read 30 Minutes',
-              frequency: 'Every day',
-              streak: 7,
-              isCompleted: true,
-            ),
-
-            const SizedBox(height: 8),
-
-            const HabitCard(
-              name: 'Practice Coding',
-              frequency: 'Every day',
-              streak: 5,
-              isCompleted: true,
-            ),
-
-            const SizedBox(height: 8),
-
-            const HabitCard(
-              name: 'Meditate',
-              frequency: 'Every day',
-              streak: 5,
-              isCompleted: false,
-            ),
+            ...habits.map(
+              (habit) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: HabitCard(
+                  habit: habit,
+                ),
+              ),
+            ), 
           ],
         ),
       ),
@@ -138,69 +147,3 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class HabitCard extends StatelessWidget {
-  final String name;
-  final String frequency;
-  final int streak;
-  final bool isCompleted;
-
-  const HabitCard({
-    super.key,
-    required this.name,
-    required this.frequency,
-    required this.streak,
-    required this.isCompleted,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              isCompleted
-                ? Icons.check_circle
-                : Icons.circle_outlined,
-              size: 30,
-            ),
-
-            const SizedBox(width: 14),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    frequency,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Text(
-              '🔥 $streak',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
