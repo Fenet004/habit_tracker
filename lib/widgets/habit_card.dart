@@ -3,10 +3,12 @@ import '../models/habit.dart';
 
 class HabitCard extends StatelessWidget {
   final Habit habit;
+  final VoidCallback onTap;
 
   const HabitCard({
     super.key,
     required this.habit,
+    required this.onTap,
   });
 
   @override
@@ -16,13 +18,19 @@ class HabitCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(
-              habit.isCompleted
-                ? Icons.check_circle
-                : Icons.circle_outlined,
-              size: 30,
+            IconButton(
+              onPressed: onTap,
+              icon: Icon(
+                habit.isCompleted
+                  ? Icons.check_circle
+                  : Icons.circle_outlined,
+                color: habit.isCompleted
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey,
+                size: 30,
+              ),
             ),
-
+            
             const SizedBox(width: 14),
 
             Expanded(
@@ -31,9 +39,12 @@ class HabitCard extends StatelessWidget {
                 children: [
                   Text(
                     habit.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
+                      decoration: habit.isCompleted
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
                     ),
                   ),
 
@@ -50,7 +61,9 @@ class HabitCard extends StatelessWidget {
             ),
 
             Text(
-              '🔥 $habit.streak',
+              habit.streak!=0
+                ? '🔥 ${habit.streak}'
+                : 'No streak yet',
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),

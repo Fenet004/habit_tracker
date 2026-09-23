@@ -2,45 +2,61 @@ import 'package:flutter/material.dart';
 import '../models/habit.dart';
 import '../widgets/habit_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  static const List<Habit> habits = [
-    Habit(
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+
+  final List<Habit> habits = [
+    const Habit(
       name: 'Drink Water',
       frequency: HabitFrequency.daily,
       streak: 12,
       isCompleted: true,
     ),
 
-    Habit(
+    const Habit(
       name: 'Workout',
       frequency: HabitFrequency.weekdays,
       streak: 4,
       isCompleted: false,
     ),
 
-    Habit(
+    const Habit(
       name: 'Read 30 Minutes',
       frequency: HabitFrequency.daily,
       streak: 7,
       isCompleted: true,
     ),
 
-    Habit(
+    const Habit(
       name: 'Practice Coding',
       frequency: HabitFrequency.daily,
       streak: 5,
       isCompleted: false,
     ),
 
-    Habit(
+    const Habit(
       name: 'Meditate',
       frequency: HabitFrequency.daily,
-      streak: 3,
+      streak: 0,
       isCompleted: false,
     ),
   ];
+
+  void toggleHabit(int index) {
+    setState(() {
+      final habit = habits[index];
+
+      habits[index] = habit.copyWith(
+        isCompleted: !habit.isCompleted,
+      ); 
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +140,22 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            ...habits.map(
-              (habit) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: HabitCard(
-                  habit: habit,
-                ),
-              ),
-            ), 
+            ...List.generate(
+              habits.length,
+              (index) {
+                final habit = habits[index];
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom:8),
+                  child: HabitCard(
+                    habit: habit,
+                    onTap: () {
+                      toggleHabit(index);
+                    },
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -146,4 +170,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+
 
