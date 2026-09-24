@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/habit.dart';
 import '../widgets/habit_card.dart';
+import 'add_habit_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,6 +56,27 @@ class _HomeScreenState extends State<HomeScreen> {
       habits[index] = habit.copyWith(
         isCompleted: !habit.isCompleted,
       ); 
+    });
+  }
+
+  Future<void> addHabit() async {
+    final newHabit = await Navigator.push<Habit>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddHabitScreen(),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (newHabit == null) {
+      return;
+    }
+
+    setState(() {
+      habits.add(newHabit);
     });
   }
 
@@ -161,9 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          print('Add habit pressed');
-        },
+        onPressed: addHabit,
         icon: const Icon(Icons.add),
         label: const Text('Add Habit'),
       ),
