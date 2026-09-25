@@ -51,7 +51,7 @@ class HabitCard extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   Text(
-                    habit.frequencyText,
+                    habit.scheduleText,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                     ),

@@ -13,37 +13,41 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   final List<Habit> habits = [
-    const Habit(
+    Habit(
       name: 'Drink Water',
-      frequency: HabitFrequency.daily,
+      repeatDays: HabitDay.values.toSet(),
       streak: 12,
       isCompleted: true,
     ),
 
-    const Habit(
+    Habit(
       name: 'Workout',
-      frequency: HabitFrequency.weekdays,
+      repeatDays: {
+        HabitDay.monday,
+        HabitDay.wednesday,
+        HabitDay.friday,
+      },
       streak: 4,
       isCompleted: false,
     ),
 
-    const Habit(
+    Habit(
       name: 'Read 30 Minutes',
-      frequency: HabitFrequency.daily,
+      repeatDays: HabitDay.values.toSet(),
       streak: 7,
       isCompleted: true,
     ),
 
-    const Habit(
+    Habit(
       name: 'Practice Coding',
-      frequency: HabitFrequency.daily,
+      repeatDays: HabitDay.values.toSet(),
       streak: 5,
       isCompleted: false,
     ),
 
-    const Habit(
+    Habit(
       name: 'Meditate',
-      frequency: HabitFrequency.daily,
+      repeatDays: HabitDay.values.toSet(),
       streak: 0,
       isCompleted: false,
     ),
