@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/habit.dart';
 import '../widgets/habit_card.dart';
 import 'add_habit_screen.dart';
@@ -11,55 +12,72 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final List<Habit> habits;
 
-  final List<Habit> habits = [
-    Habit(
-      name: 'Drink Water',
-      repeatDays: HabitDay.values.toSet(),
-      streak: 12,
-      isCompleted: true,
-    ),
+  @override
+  void initState() {
+    super.initState();
 
-    Habit(
-      name: 'Workout',
-      repeatDays: {
-        HabitDay.monday,
-        HabitDay.wednesday,
-        HabitDay.friday,
-      },
-      streak: 4,
-      isCompleted: false,
-    ),
+    final today = dateOnly(DateTime.now());
 
-    Habit(
-      name: 'Read 30 Minutes',
-      repeatDays: HabitDay.values.toSet(),
-      streak: 7,
-      isCompleted: true,
-    ),
+    habits = [
+      Habit(
+        name: 'Drink Water',
+        repeatDays: HabitDay.values.toSet(),
+        createdAt: today,
+        completedDates: {today},
+      ),
 
-    Habit(
-      name: 'Practice Coding',
-      repeatDays: HabitDay.values.toSet(),
-      streak: 5,
-      isCompleted: false,
-    ),
+      Habit(
+        name: 'Workout',
+        repeatDays: {
+          HabitDay.monday,
+          HabitDay.wednesday,
+          HabitDay.friday,
+        },
+        createdAt: today,
+      ),
 
-    Habit(
-      name: 'Meditate',
-      repeatDays: HabitDay.values.toSet(),
-      streak: 0,
-      isCompleted: false,
-    ),
-  ];
+      Habit(
+        name: 'Read 30 Minutes',
+        repeatDays: HabitDay.values.toSet(),
+        createdAt: today,
+        completedDates: {today},
+      ),
 
-  void toggleHabit(int index) {
+      Habit(
+        name: 'Practice Coding',
+        repeatDays: {
+          HabitDay.monday,
+          HabitDay.tuesday,
+          HabitDay.wednesday,
+          HabitDay.thursday,
+          HabitDay.friday,
+        },
+        createdAt: today,
+      ),
+
+      Habit(
+        name: 'Meditate',
+        repeatDays: HabitDay.values.toSet(),
+        createdAt: today,
+      ),
+    ];
+    
+  }
+
+  void toggleHabit(
+    Habit habit,
+    DateTime date,
+  ) {
+    final index = habits.indexOf(habit);
+
+    if (index == -1) {
+      return;
+    }
+
     setState(() {
-      final habit = habits[index];
-
-      habits[index] = habit.copyWith(
-        isCompleted: !habit.isCompleted,
-      ); 
+      habits[index] = habit.toggleCompletionOn(date);
     });
   }
 
@@ -86,9 +104,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final completedHabits = habits.where((habit) => habit.isCompleted).length;
-    final totalHabits = habits.length;
-    final progress = totalHabits == 0 ? 0.0 : completedHabits / totalHabits;
+    final today = dateOnly(DateTime.now());
+    final formattedDate = DateFormat('EEEE, MMMM d').format(today);
+
+    final todaysHabits = habits
+        .where(
+          (habit) => habit.isScheduledOn(today),
+        )
+        .toList();
+
+    final completedHabits = todaysHabits
+        .where(
+          (habit) => habit.isCompletedOn(today),
+        )
+        .length;
+
+    final totalHabits = todaysHabits.length;
+    final progress = 
+        totalHabits == 0 
+            ? 0.0 
+            : completedHabits / totalHabits;
 
     return Scaffold(
       appBar: AppBar(
@@ -109,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 6),
 
             Text(
-              'Saturday, September 19',
+              formattedDate,
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey.shade600,
@@ -166,22 +201,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 16),
 
-            ...List.generate(
-              habits.length,
-              (index) {
-                final habit = habits[index];
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom:8),
-                  child: HabitCard(
-                    habit: habit,
-                    onTap: () {
-                      toggleHabit(index);
-                    },
+            if (todaysHabits.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: 40,
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 48,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'No habits scheduled today',
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              )
+
+            else
+              ...todaysHabits.map(
+                (habit) {
+                  return Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: 8,
+                    ),
+                    child: HabitCard(
+                      habit: habit,
+                      isCompleted: habit.isCompletedOn(today),
+                      onTap: () {
+                        toggleHabit(habit, today);
+                      },
+                    ),
+                  );
+                },
+              )
           ],
         ),
       ),

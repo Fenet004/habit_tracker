@@ -31,8 +31,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     final habit = Habit(
       name: _nameController.text.trim(),
       repeatDays: _selectedDays,
-      streak: 0,
-      isCompleted: false,
+      createdAt: DateTime.now(),
     );
 
     Navigator.pop(context, habit);

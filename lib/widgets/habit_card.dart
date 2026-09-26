@@ -3,11 +3,13 @@ import '../models/habit.dart';
 
 class HabitCard extends StatelessWidget {
   final Habit habit;
+  final bool isCompleted;
   final VoidCallback onTap;
-
+  
   const HabitCard({
     super.key,
     required this.habit,
+    required this.isCompleted,
     required this.onTap,
   });
 
@@ -21,17 +23,17 @@ class HabitCard extends StatelessWidget {
             IconButton(
               onPressed: onTap,
               icon: Icon(
-                habit.isCompleted
+                isCompleted
                   ? Icons.check_circle
                   : Icons.circle_outlined,
-                color: habit.isCompleted
+                color: isCompleted
                   ? Theme.of(context).colorScheme.primary
                   : Colors.grey,
                 size: 30,
               ),
             ),
             
-            const SizedBox(width: 14),
+            const SizedBox(width: 8),
 
             Expanded(
               child: Column(
@@ -42,7 +44,7 @@ class HabitCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      decoration: habit.isCompleted
+                      decoration: isCompleted
                         ? TextDecoration.lineThrough
                         : TextDecoration.none,
                     ),
@@ -61,11 +63,10 @@ class HabitCard extends StatelessWidget {
             ),
 
             Text(
-              habit.streak!=0
-                ? '🔥 ${habit.streak}'
-                : 'No streak yet',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
+              '${habit.totalCompletions} done',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
