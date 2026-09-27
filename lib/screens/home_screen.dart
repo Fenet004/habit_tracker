@@ -232,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: HabitCard(
                       habit: habit,
                       isCompleted: habit.isCompletedOn(today),
+                      streak: habit.currentStreak(today),
                       onTap: () {
                         toggleHabit(habit, today);
                       },

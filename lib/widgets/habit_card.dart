@@ -4,12 +4,14 @@ import '../models/habit.dart';
 class HabitCard extends StatelessWidget {
   final Habit habit;
   final bool isCompleted;
+  final int streak;
   final VoidCallback onTap;
   
   const HabitCard({
     super.key,
     required this.habit,
     required this.isCompleted,
+    required this.streak,
     required this.onTap,
   });
 
@@ -63,10 +65,9 @@ class HabitCard extends StatelessWidget {
             ),
 
             Text(
-              '${habit.totalCompletions} done',
+              '🔥 $streak',
               style: TextStyle(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

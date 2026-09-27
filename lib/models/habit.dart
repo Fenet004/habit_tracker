@@ -6,6 +6,14 @@ DateTime dateOnly(DateTime date) {
   );
 }
 
+DateTime previousCalendarDay(DateTime date) {
+  return DateTime(
+    date.year,
+    date.month,
+    date.day - 1,
+  );
+}
+
 enum HabitDay {
   monday('M', 'Mon', 'Monday'),
   tuesday('T', 'Tue', 'Tuesday'),
@@ -113,6 +121,30 @@ class Habit {
     );
   }
 
+  int currentStreak(DateTime asOfDate) {
+    final today = dateOnly(asOfDate);
+
+    if (today.isBefore(createdAt)) {
+      return 0;
+    }
+
+    var streak = 0;
+    var currentDate = today;
+
+    while(!currentDate.isBefore(createdAt)) {
+      if (isScheduledOn(currentDate)) {
+        if (isCompletedOn(currentDate)) {
+          streak++;
+        } else if (!currentDate.isAtSameMomentAs(today)) {
+          break;
+        }
+      }
+
+      currentDate = previousCalendarDay(currentDate);
+    }
+    return streak;
+  }
+
   int get totalCompletions {
     return completedDates.length;
   }
@@ -130,4 +162,5 @@ class Habit {
       completedDates: completedDates ?? this.completedDates,
     );
   }
+
 }
