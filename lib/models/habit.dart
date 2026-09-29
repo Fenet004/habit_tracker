@@ -35,12 +35,14 @@ enum HabitDay {
 }
 
 class Habit {
+  final int? id;
   final String name;
   final Set<HabitDay> repeatDays;
   final DateTime createdAt;
   final Set<DateTime> completedDates;
 
   Habit({
+    this.id,
     required this.name,
     required Set<HabitDay> repeatDays,
     required DateTime createdAt,
@@ -150,12 +152,14 @@ class Habit {
   }
 
   Habit copyWith({
+    int? id,
     String? name,
     Set<HabitDay>? repeatDays,
     DateTime? createdAt,
     Set<DateTime>? completedDates,
   }) {
     return Habit(
+      id: id ?? this.id,
       name: name ?? this.name,
       repeatDays: repeatDays ?? this.repeatDays,
       createdAt: createdAt ?? this.createdAt,

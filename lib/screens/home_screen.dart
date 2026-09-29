@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/habit.dart';
 import '../widgets/habit_card.dart';
 import 'add_habit_screen.dart';
+import '../data/repositories/habit_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,73 +13,79 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final List<Habit> habits;
+  final HabitRepository _habitRepository = HabitRepository();
+  List<Habit> habits = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
 
-    final today = dateOnly(DateTime.now());
-
-    habits = [
-      Habit(
-        name: 'Drink Water',
-        repeatDays: HabitDay.values.toSet(),
-        createdAt: today,
-        completedDates: {today},
-      ),
-
-      Habit(
-        name: 'Workout',
-        repeatDays: {
-          HabitDay.monday,
-          HabitDay.wednesday,
-          HabitDay.friday,
-        },
-        createdAt: today,
-      ),
-
-      Habit(
-        name: 'Read 30 Minutes',
-        repeatDays: HabitDay.values.toSet(),
-        createdAt: today,
-        completedDates: {today},
-      ),
-
-      Habit(
-        name: 'Practice Coding',
-        repeatDays: {
-          HabitDay.monday,
-          HabitDay.tuesday,
-          HabitDay.wednesday,
-          HabitDay.thursday,
-          HabitDay.friday,
-        },
-        createdAt: today,
-      ),
-
-      Habit(
-        name: 'Meditate',
-        repeatDays: HabitDay.values.toSet(),
-        createdAt: today,
-      ),
-    ];
-    
+    _loadHabits();
   }
 
-  void toggleHabit(
+  Future<void> _loadHabits() async {
+    try {
+      final loadedHabits = await _habitRepository.getHabits();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        habits = loadedHabits;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Could not load habits.';
+      });
+    }
+  }
+
+  Future<void> toggleHabit(
     Habit habit,
     DateTime date,
-  ) {
-    final index = habits.indexOf(habit);
+  ) async {
+    try {
+      final updatedHabit =
+          await _habitRepository.toggleCompletion(habit, date);
+      
+      if (!mounted) {
+        return;
+      }
 
-    if (index == -1) {
-      return;
+      final index = habits.indexWhere(
+        (item) => item.id == updatedHabit.id,
+      );
+
+      if (index == -1) {
+        return;
+      }
+
+      setState(() {
+        habits[index] = updatedHabit;
+      });
+    } catch (error) {
+      if(!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not update habit',
+          ),
+        ),
+      );
     }
-
-    setState(() {
-      habits[index] = habit.toggleCompletionOn(date);
-    });
   }
 
   Future<void> addHabit() async {
@@ -89,17 +96,33 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    if (!mounted) {
+    if (!mounted || newHabit == null) {
       return;
     }
 
-    if (newHabit == null) {
-      return;
-    }
+    try {
+      final savedHabit = await _habitRepository.addHabit(newHabit);
 
-    setState(() {
-      habits.add(newHabit);
-    });
+      if(!mounted) {
+        return;
+      }
+
+      setState(() {
+        habits.add(savedHabit);
+      });
+    } catch (error) {
+      if(!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not save habit',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -129,120 +152,128 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Habit Tracker'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: ListView(
-          children: [
-            const Text(
-              'Good morning 👋',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            Text(
-              formattedDate,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade600,
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            const Text(
-              "Today's Progress",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$completedHabits of $totalHabits completed',
-                  style: TextStyle(
-                    fontSize: 15,
-                  ),
-                ),
-                Text(
-                  '${(progress * 100).round()}%',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 10,
-            ),
-
-            const SizedBox(height: 32),
-
-            const Text(
-              'Today',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            if (todaysHabits.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(
-                  vertical: 40,
-                ),
-                child: Center(
-                  child: Column(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : _errorMessage != null
+              ? Center(
+                  child: Text(_errorMessage!),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ListView(
                     children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 48,
+                      const Text(
+                        'Good morning 👋',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      SizedBox(height: 12),
+
+                      const SizedBox(height: 6),
+
                       Text(
-                        'No habits scheduled today',
+                        formattedDate,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
+
+                      const SizedBox(height: 32),
+
+                      const Text(
+                        "Today's Progress",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$completedHabits of $totalHabits completed',
+                            style: TextStyle(
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(
+                            '${(progress * 100).round()}%',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 10,
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      const Text(
+                        'Today',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      if (todaysHabits.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 40,
+                          ),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  size: 48,
+                                ),
+                                SizedBox(height: 12),
+                                Text(
+                                  'No habits scheduled today',
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+
+                      else
+                        ...todaysHabits.map(
+                          (habit) {
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 8,
+                              ),
+                              child: HabitCard(
+                                habit: habit,
+                                isCompleted: habit.isCompletedOn(today),
+                                streak: habit.currentStreak(today),
+                                onTap: () {
+                                  toggleHabit(habit, today);
+                                },
+                              ),
+                            );
+                          },
+                        )
                     ],
                   ),
                 ),
-              )
-
-            else
-              ...todaysHabits.map(
-                (habit) {
-                  return Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 8,
-                    ),
-                    child: HabitCard(
-                      habit: habit,
-                      isCompleted: habit.isCompletedOn(today),
-                      streak: habit.currentStreak(today),
-                      onTap: () {
-                        toggleHabit(habit, today);
-                      },
-                    ),
-                  );
-                },
-              )
-          ],
-        ),
-      ),
       
       floatingActionButton: FloatingActionButton.extended(
         onPressed: addHabit,
