@@ -169,5 +169,69 @@ class HabitRepository {
     return habit.toggleCompletionOn(normalizedDate);
   }
 
+  Future<Habit> updateHabit(Habit habit) async {
+    final habitId = habit.id;
 
+    if (habitId == null) {
+      throw StateError(
+        'Cannot update a habit without an ID.',
+      );
+    }
+
+    final db = await _appDatabase.database;
+
+    await db.transaction(
+      (transaction) async {
+        final updatedRows = await transaction.update(
+          'habits',
+          {
+            'name': habit.name,
+            'created_at': _dateToDatabase(habit.createdAt),
+          },
+          where: 'id = ?',
+          whereArgs: [habitId],
+        );
+
+        if (updatedRows != 1) {
+          throw StateError(
+            'Habit $habitId was not found.',
+          );
+        }
+
+        await transaction.delete(
+          'habit_repeat_days',
+          where: 'habit_id = ?',
+          whereArgs: [habitId],
+        );
+
+        for (final day in habit.repeatDays) {
+          await transaction.insert(
+            'habit_repeat_days',
+            {
+              'habit_id': habitId,
+              'weekday': day.index + 1,
+            },
+          );
+        }
+      },
+    );
+
+    return habit;
+  }
+
+  Future<void> deleteHabit(int habitId) async {
+    final db = await _appDatabase.database;
+
+    final deletedRows = await db.delete(
+      'habits',
+      where: 'id = ?',
+      whereArgs: [habitId],
+    );
+
+    if (deletedRows != 1) {
+      throw StateError(
+        'Habit $habitId was not found.',
+      );
+    }
+  }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/habit.dart';
 import '../widgets/habit_card.dart';
-import 'add_habit_screen.dart';
+import 'habit_form_screen.dart';
 import '../data/repositories/habit_repository.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -89,19 +89,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> addHabit() async {
-    final newHabit = await Navigator.push<Habit>(
+    final result = await Navigator.push<HabitFormResult>(
       context,
       MaterialPageRoute(
-        builder: (context) => const AddHabitScreen(),
+        builder: (context) => const HabitFormScreen(),
       ),
     );
 
-    if (!mounted || newHabit == null) {
+    if (!mounted || result == null) {
+      return;
+    }
+
+    if (result.action != HabitFormAction.save) {
       return;
     }
 
     try {
-      final savedHabit = await _habitRepository.addHabit(newHabit);
+      final savedHabit = await _habitRepository.addHabit(result.habit);
 
       if(!mounted) {
         return;
@@ -119,6 +123,102 @@ class _HomeScreenState extends State<HomeScreen> {
         const SnackBar(
           content: Text(
             'Could not save habit',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> editHabit(Habit habit) async {
+    final result = await Navigator.push<HabitFormResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HabitFormScreen(habit: habit),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    switch (result.action) {
+      case HabitFormAction.save:
+        await _saveHabitChanges(result.habit);
+      case HabitFormAction.delete:
+        await _deleteHabit(result.habit);
+    }
+  }
+
+  Future<void> _saveHabitChanges(Habit habit) async {
+    try {
+      final updatedHabit = await _habitRepository.updateHabit(habit);
+
+      if (!mounted) {
+        return;
+      }
+
+      final index = habits.indexWhere(
+        (item) => item.id == updatedHabit.id,
+      );
+
+      if (index == -1) {
+        return;
+      }
+
+      setState(() {
+        habits[index] = updatedHabit;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not update habit',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteHabit(Habit habit) async {
+    final id = habit.id;
+
+    if (id == null) {
+      return;
+    }
+
+    try {
+      await _habitRepository.deleteHabit(id);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        habits.removeWhere(
+          (item) => item.id == id,
+        );
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${habit.name} deleted',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not delete habit',
           ),
         ),
       );
@@ -264,8 +364,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 habit: habit,
                                 isCompleted: habit.isCompletedOn(today),
                                 streak: habit.currentStreak(today),
-                                onTap: () {
+                                onToggle: () {
                                   toggleHabit(habit, today);
+                                },
+                                onOpen: () {
+                                  editHabit(habit);
                                 },
                               ),
                             );

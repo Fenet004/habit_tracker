@@ -1,19 +1,80 @@
 import 'package:flutter/material.dart';
 import '../models/habit.dart';
 
-class AddHabitScreen extends StatefulWidget {
-  const AddHabitScreen({super.key});
-
-  @override
-  State<AddHabitScreen> createState() => _AddHabitScreenState();
+enum HabitFormAction {
+  save,
+  delete,
 }
 
-class _AddHabitScreenState extends State<AddHabitScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final Set<HabitDay> _selectedDays = HabitDay.values.toSet();
+class HabitFormResult {
+  final HabitFormAction action;
+  final Habit habit;
 
-  void _createHabit() {
+  const HabitFormResult._({
+    required this.action,
+    required this.habit,
+  });
+
+  factory HabitFormResult.saved(
+    Habit habit,
+  ) {
+    return HabitFormResult._(
+      action: HabitFormAction.save,
+      habit: habit,
+    );
+  }
+
+  factory HabitFormResult.deleted(
+    Habit habit,
+  ) {
+    return HabitFormResult._(
+      action: HabitFormAction.delete,
+      habit: habit,
+    );
+  }
+}
+
+class HabitFormScreen extends StatefulWidget {
+  final Habit? habit;
+
+  const HabitFormScreen({
+    super.key,
+    this.habit,
+  });
+
+  @override
+  State<HabitFormScreen> createState() => _HabitFormScreenState();
+}
+
+class _HabitFormScreenState extends State<HabitFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late Set<HabitDay> _selectedDays;
+
+  bool get isEditing => widget.habit != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final habit = widget.habit;
+
+    _nameController = TextEditingController(
+      text: habit?.name ?? '',
+    );
+
+    _selectedDays = habit == null
+        ? HabitDay.values.toSet()
+        : Set<HabitDay>.from(habit.repeatDays);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -28,26 +89,75 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       return ;
     }
 
+    final existingHabit = widget.habit;
+
     final habit = Habit(
+      id: existingHabit?.id,
       name: _nameController.text.trim(),
       repeatDays: _selectedDays,
-      createdAt: DateTime.now(),
+      createdAt: existingHabit?.createdAt ?? DateTime.now(),
+      completedDates: existingHabit?.completedDates ?? const {},
     );
 
-    Navigator.pop(context, habit);
+    Navigator.pop(
+      context,
+      HabitFormResult.saved(habit),
+    );
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+  Future<void> _confirmDelete() async {
+    final habit = widget.habit;
+
+    if (habit == null) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete habit?'),
+          content: Text(
+            'Delete "${habit.name}" and its completion history?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      HabitFormResult.deleted(habit),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Habit'),
+        title: Text(
+          isEditing
+              ? 'Edit Habit'
+              : 'Create Habit',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -58,6 +168,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) {
+                  _submit();
+                },
                 decoration: const InputDecoration(
                   labelText: 'Habit name',
                   hintText: 'e.g. Read 30 minutes',
@@ -159,9 +273,23 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               const SizedBox(height: 32),
 
               FilledButton(
-                onPressed: _createHabit,
-                child: const Text('Create Habit'),
+                onPressed: _submit,
+                child: Text(
+                  isEditing
+                      ? 'Save Changes'
+                      : 'Create Habit',
+                ),
               ),
+
+              if (isEditing) ... [
+                const SizedBox(height: 16),
+
+                TextButton.icon(
+                  onPressed: _confirmDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete Habit'),
+                ),
+              ],
             ],
           ),
         ),
